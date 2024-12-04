@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { Accelerometer } from 'expo-sensors';
+import {useLocalSearchParams} from "expo-router";
+import RunningTracker from "@/app/workouts/RunningTracker";
+import PushUpTracker from "@/app/workouts/PushUpTracker";
+import JumpingJackTracker from "@/app/workouts/JumpingJackTracker";
+import SquatTracker from "@/app/workouts/SquatTracker";
+import PlankTracker from "@/app/workouts/PlankTracker";
 
 const WorkoutTimer = () => {
-    const initialTime = 600; // 600 seconds (10 minutes)
+
+    const params = useLocalSearchParams();
+
+    const initialTime = params['duration'] * 60;
     const [timer, setTimer] = useState(initialTime);
     const [isRunning, setIsRunning] = useState(true);
     const [isListening, setIsListening] = useState(false);
@@ -88,9 +96,19 @@ const WorkoutTimer = () => {
         return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const renderCounts = () => {
+        switch (params['title']) {
+            case 'Running': return <RunningTracker/>;
+            case 'Push-ups': return <PushUpTracker/>;
+            case 'Jumping Jacks': return <JumpingJackTracker/>;
+            case 'Squats': return <SquatTracker/>;
+            case 'Plank': return <PlankTracker/>;
+        }
+    }
+
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Barbell Bench Press</Text>
+            <Text style={styles.title}>{params['title']}</Text>
 
             <AnimatedCircularProgress
                 size={200}
@@ -120,8 +138,7 @@ const WorkoutTimer = () => {
                 </TouchableOpacity>
             </View>
 
-            <Text style={styles.nextExercise}>Next: Split Squat</Text>
-            <Text style={styles.nextExerciseSubtitle}>1 Step Up with Hip & Heel</Text>
+            {renderCounts()}
         </View>
     );
 };
@@ -137,7 +154,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 4,
+        marginBottom: 30,
     },
     timerText: {
         fontSize: 24,
@@ -166,17 +183,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    nextExercise: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginTop: 24,
-    },
-    nextExerciseSubtitle: {
-        fontSize: 14,
-        color: '#6E6E6E',
-        marginTop: 4,
-    },
+    }
 });
 
 export default WorkoutTimer;

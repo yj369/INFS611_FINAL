@@ -6,7 +6,7 @@ const dataList = [
     {
         id: 1,
         title: "Running",
-        duration: "20 min",
+        duration: 20,
         category: "Cardio Activities",
         level: "easy",
         image: "https://images.pexels.com/photos/1465893/pexels-photo-1465893.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
@@ -14,7 +14,7 @@ const dataList = [
     {
         id: 2,
         title: "Push-ups",
-        duration: "10 min",
+        duration: 10,
         category: "Strength Training",
         level: "easy",
         image: "https://images.pexels.com/photos/4162487/pexels-photo-4162487.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
@@ -22,7 +22,7 @@ const dataList = [
     {
         id: 3,
         title: "Jumping Jacks",
-        duration: "15 min",
+        duration: 15,
         category: "Cardio Activities",
         level: "easy",
         image: "https://images.pexels.com/photos/8860964/pexels-photo-8860964.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
@@ -30,7 +30,7 @@ const dataList = [
     {
         id: 4,
         title: "Squats",
-        duration: "10 min",
+        duration: 10,
         category: "Strength Training",
         level: "easy",
         image: "https://images.pexels.com/photos/4164454/pexels-photo-4164454.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
@@ -38,7 +38,7 @@ const dataList = [
     {
         id: 5,
         title: "Plank",
-        duration: "5 min",
+        duration: 5,
         category: "Core Strength",
         level: "easy",
         image: "https://images.pexels.com/photos/3823063/pexels-photo-3823063.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
@@ -59,7 +59,7 @@ export default function MorningExerciseScreen() {
 
             <ScrollView contentContainerStyle={styles.poseList}>
                 {dataList.map((pose) => (
-                    <TouchableOpacity key={pose.id} style={styles.poseCard} onPress={() => router.push('/WorkoutTimer')}>
+                    <TouchableOpacity key={pose.id} style={styles.poseCard} onPress={() => router.push({pathname: '/WorkoutTimer', params: pose})}>
                         <Image source={{ uri: pose.image }} style={styles.poseImage} />
                         <View style={styles.poseInfo}>
                             <Text style={styles.poseDays}>{pose.category}</Text>

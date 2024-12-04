@@ -15,6 +15,8 @@ export default function RootLayout() {
                     <Stack.Screen name="EnvironmentalAwareness" options={{ title: 'Environmental Awareness' }} />
                     <Stack.Screen name="RestReminder" options={{ title: 'Rest Reminder' }} />
                     <Stack.Screen name="LocationDetail" options={{ title: 'Location Detail'}}/>
+                    <Stack.Screen name="WorkoutTimer" options={{ title: 'Workout Timer'}}/>
+
                 </Stack>
             </PopupProvider>
         </RestReminderProvider>
