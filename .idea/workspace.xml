@@ -5,15 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a4f3a9a0-91af-4f7a-8bdd-e0833cafd5c2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/workouts/JumpingJackTracker.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/workouts/PlankTracker.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/workouts/PushUpTracker.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/workouts/RunningTracker.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/workouts/SquatTracker.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/MorningExercisePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/MorningExercisePage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/WorkoutTimer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/WorkoutTimer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/_layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/LocationCheckIn.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/LocationCheckIn.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/workouts/RunningTracker.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/workouts/RunningTracker.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,7 +64,7 @@
       <workItem from="1732563884690" duration="7285000" />
       <workItem from="1732755143780" duration="1178000" />
       <workItem from="1732763234732" duration="13000" />
-      <workItem from="1733250752563" duration="29926000" />
+      <workItem from="1733250752563" duration="30237000" />
     </task>
     <servers />
   </component>
