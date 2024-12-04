@@ -1,42 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Button } from "react-native";
-import * as Location from "expo-location";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { LightSensor } from "expo-sensors";
-import * as Notifications from "expo-notifications";
+import * as Location from "expo-location";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
 
-// Predefined outdoor locations (e.g., parks)
-const parks = [
-    {
-        name: "Central Park",
-        latitude: 38.8314083,
-        longitude: -77.3111517,
-        radius: 200,
-    },
-    {
-        name: "Golden Gate Park",
-        latitude: 37.76904,
-        longitude: -122.483519,
-        radius: 200,
-    },
-];
-
-export default function EnvironmentalAwareness() {
+export default function OutdoorActivityTracker() {
     const [lightLevel, setLightLevel] = useState(null);
+    const [nearbyParks, setNearbyParks] = useState([]);
+    const [outdoorTime, setOutdoorTime] = useState(0);
+    const [activities, setActivities] = useState([]);
     const [location, setLocation] = useState(null);
-    const [nearPark, setNearPark] = useState(null);
-    const [outdoorStartTime, setOutdoorStartTime] = useState(null);
-    const [timeSpentOutdoors, setTimeSpentOutdoors] = useState(0);
 
     useEffect(() => {
-        // Request location permissions
+        // Request permissions for location
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== "granted") {
-                alert("Permission to access location was denied.");
+                console.log("Permission to access location was denied");
                 return;
             }
 
-            // Start monitoring location
+            // Start location updates
             Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.High,
@@ -45,100 +29,112 @@ export default function EnvironmentalAwareness() {
                 },
                 (newLocation) => {
                     setLocation(newLocation.coords);
-                    checkProximityToParks(newLocation.coords);
+                    findNearbyParks(newLocation.coords);
                 }
             );
         })();
 
-        // Start monitoring light sensor
+        // Activate the light sensor
         const subscription = LightSensor.addListener((data) => {
-            setLightLevel(data.illuminance);
+            setLightLevel(data.illuminance); // Read light level in lux
         });
 
         return () => {
-            subscription.remove();
+            subscription.remove(); // Unsubscribe on unmount
         };
     }, []);
 
-    // Check if user is near a park
-    const checkProximityToParks = (currentLocation) => {
-        parks.forEach((park) => {
-            const distance = getDistance(
-                currentLocation.latitude,
-                currentLocation.longitude,
-                park.latitude,
-                park.longitude
-            );
+    const findNearbyParks = (currentLocation) => {
+        const parks = [
+            { name: "Central Park", distance: 500 },
+            { name: "Hidden Oaks Nature Center", distance: 1200 },
+        ];
 
-            if (distance <= park.radius) {
-                setNearPark(park);
-            }
-        });
+        const nearby = parks.filter((park) => park.distance <= 1000); // Within 1km
+        setNearbyParks(nearby);
     };
 
-    // Haversine formula to calculate distance
-    const getDistance = (lat1, lon1, lat2, lon2) => {
-        const toRad = (value) => (value * Math.PI) / 180;
-        const R = 6371e3; // Earth radius in meters
-        const φ1 = toRad(lat1);
-        const φ2 = toRad(lat2);
-        const Δφ = toRad(lat2 - lat1);
-        const Δλ = toRad(lon2 - lon1);
-
-        const a =
-            Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c; // Distance in meters
+    const startOutdoorActivity = () => {
+        setOutdoorTime((prev) => prev + 30); // Add 30 mins for simplicity
+        setActivities([
+            ...activities,
+            { id: activities.length + 1, name: "Walking", time: 30 },
+        ]);
     };
 
-    // Send notification if conditions are optimal
-    useEffect(() => {
-        if (lightLevel && lightLevel > 1000 && nearPark) {
-            console.log(">>>>>> nearPark.name");
-            sendNotification(nearPark.name);
-            if (!outdoorStartTime) {
-                setOutdoorStartTime(new Date());
-            }
-        } else if (outdoorStartTime) {
-            // Calculate time spent outdoors
-            const endTime = new Date();
-            const duration = Math.floor((endTime - outdoorStartTime) / 1000 / 60); // Convert to minutes
-            setTimeSpentOutdoors((prev) => prev + duration);
-            setOutdoorStartTime(null);
-        }
-    }, [lightLevel, nearPark]);
-
-    // Send notification
-    const sendNotification = async (parkName) => {
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: "Great Outdoor Conditions!",
-                body: `You are near ${parkName}. It's bright enough for outdoor activities. Enjoy some time outdoors!`,
-            },
-            trigger: null,
-        });
-    };
+    const renderActivity = ({ item }) => (
+        <View style={styles.activity}>
+            <Text>{item.name}</Text>
+            <Text>{item.time} mins</Text>
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Environmental Awareness Task</Text>
-            <Text>
-                Light Level: {lightLevel ? `${lightLevel} lux` : "Fetching..."}
+            {/* Header */}
+            <Text style={styles.header}>Outdoor Activity Encouragement</Text>
+            <Text style={styles.subHeader}>
+                Track your environment for healthy outdoor activities.
             </Text>
-            <Text>
-                Location:{" "}
-                {location
-                    ? `Lat: ${location.latitude}, Lon: ${location.longitude}`
-                    : "Fetching..."}
-            </Text>
-            <Text>
-                Near Park: {nearPark ? nearPark.name : "Not near any predefined parks"}
-            </Text>
-            <Text>
-                Time Spent Outdoors: {timeSpentOutdoors} minutes
-            </Text>
+
+            {/* Light and Location Status */}
+            <View style={styles.statusCard}>
+                <Text style={styles.statusText}>
+                    Light Level:{" "}
+                    {lightLevel !== null
+                        ? lightLevel > 50
+                            ? "Bright (✓)"
+                            : "Dim"
+                        : "Loading..."}
+                </Text>
+                <Text style={styles.statusText}>
+                    Nearby Parks:{" "}
+                    {nearbyParks.length > 0
+                        ? nearbyParks.map((park) => park?.name).join(", ")
+                        : "None Nearby"}
+                </Text>
+            </View>
+
+            {/* Encouragement Message */}
+            <View style={styles.encouragementCard}>
+                <Text style={styles.encouragementText}>
+                    {lightLevel !== null && lightLevel > 50 && nearbyParks.length > 0
+                        ? "✅ Great time to go outdoors! Suggested Activity: Take a walk"
+                        : "Conditions are not ideal for outdoor activities. Please check later."}
+                </Text>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={startOutdoorActivity}
+                    disabled={!(lightLevel && lightLevel > 50 && nearbyParks.length > 0)}
+                >
+                    <Text style={styles.buttonText}>Start Activity</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Progress Tracker */}
+            <View style={styles.progressCard}>
+                <Text style={styles.progressText}>Time Spent Outdoors:</Text>
+                <AnimatedCircularProgress
+                    size={150}
+                    width={10}
+                    fill={(outdoorTime / 60) * 100}
+                    tintColor="#5DB075"
+                    backgroundColor="#e0e0e0"
+                >
+                    {(fill) => (
+                        <Text style={styles.progressTime}>{outdoorTime} mins</Text>
+                    )}
+                </AnimatedCircularProgress>
+            </View>
+
+            {/* Activity Log */}
+            <Text style={styles.activityHeader}>Activity Log:</Text>
+            <FlatList
+                data={activities}
+                renderItem={renderActivity}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.activityList}
+            />
         </View>
     );
 }
@@ -146,12 +142,73 @@ export default function EnvironmentalAwareness() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        padding: 16,
         backgroundColor: "#fff",
     },
     header: {
         fontSize: 24,
         fontWeight: "bold",
-        marginBottom: 20,
+        marginBottom: 8,
+    },
+    subHeader: {
+        fontSize: 16,
+        color: "#6e6e6e",
+        marginBottom: 16,
+    },
+    statusCard: {
+        padding: 16,
+        backgroundColor: "#f9f9f9",
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    statusText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    encouragementCard: {
+        padding: 16,
+        backgroundColor: "#e8f5e9",
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    encouragementText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    button: {
+        backgroundColor: "#5DB075",
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "bold",
+    },
+    progressCard: {
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    progressText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    progressTime: {
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+    activityHeader: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 8,
+    },
+    activityList: {
+        marginBottom: 16,
+    },
+    activity: {
+        padding: 16,
+        backgroundColor: "#f9f9f9",
+        borderRadius: 8,
+        marginBottom: 8,
     },
 });

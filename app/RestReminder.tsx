@@ -1,100 +1,183 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Button, Alert } from "react-native";
-import { Accelerometer, Gyroscope } from "expo-sensors";
+import React, { useEffect, useState } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    Switch,
+    TouchableOpacity,
+} from "react-native";
+import Slider from "@react-native-community/slider";
+import { Accelerometer } from "expo-sensors";
+import { useRestReminder } from "./context/RestReminderContext";
 
-export default function RestReminder() {
-    const [isUsingPhone, setIsUsingPhone] = useState(false);
-    const [usageStartTime, setUsageStartTime] = useState(null);
-    const [isResting, setIsResting] = useState(false);
-    const [restStartTime, setRestStartTime] = useState(null);
-    const [restLogged, setRestLogged] = useState(false);
+export default function RestReminderPage(): JSX.Element {
+    const {
+        isEnabled,
+        setIsEnabled,
+        usageLimit,
+        setUsageLimit,
+        restDuration,
+        setRestDuration,
+        usageTime,
+        resetUsageTime,
+    } = useRestReminder();
+
+    const [isFlipped, setIsFlipped] = useState<boolean>(false); // To track if the phone is flipped
+    const [isResting, setIsResting] = useState<boolean>(false); // Track if rest is in progress
+    const [remainingRestTime, setRemainingRestTime] = useState<number>(restDuration); // Rest timer state
+    const [restTimer, setRestTimer] = useState<NodeJS.Timeout | null>(null); // Timer for rest period
 
     useEffect(() => {
-        // Start monitoring accelerometer and gyroscope
-        const accelerometerSubscription = Accelerometer.addListener((data) => {
-            // Detect continuous phone movement
-            if (Math.abs(data.x) > 0.2 || Math.abs(data.y) > 0.2 || Math.abs(data.z) > 0.2) {
-                if (!isUsingPhone) {
-                    setIsUsingPhone(true);
-                    setUsageStartTime(new Date());
-                }
+        // Subscribe to the accelerometer
+        const subscription = Accelerometer.addListener((data) => {
+            const { x, y, z } = data;
+
+            // Check if the phone is face down
+            if (x > -0.5 && x < 0.5 && y > -0.5 && y < 0.5 && z < -0.7) {
+                setIsFlipped(true);
+            } else {
+                setIsFlipped(false);
             }
         });
 
-        const gyroscopeSubscription = Gyroscope.addListener((data) => {
-            // Check if phone is placed face down
-            if (Math.abs(data.z) > 1 && Math.abs(data.x) < 0.2 && Math.abs(data.y) < 0.2) {
-                if (!isResting && !restLogged) {
-                    setIsResting(true);
-                    setRestStartTime(new Date());
-                }
-            }
-        });
-
-        // Clear subscriptions when component unmounts
         return () => {
-            accelerometerSubscription.remove();
-            gyroscopeSubscription.remove();
+            subscription.remove();
+            if (restTimer) clearInterval(restTimer);
         };
-    }, [isUsingPhone, isResting, restLogged]);
+    }, [restTimer]);
 
-    // Check for prolonged phone usage
-    useEffect(() => {
-        if (isUsingPhone && usageStartTime) {
-            const interval = setInterval(() => {
-                const currentTime = new Date();
-                const elapsedTime = Math.floor((currentTime - usageStartTime) / 1000 / 60); // in minutes
+    const startRest = () => {
+        if (!isFlipped) return;
 
-                if (elapsedTime >= 30) {
-                    Alert.alert(
-                        "Time for a Break!",
-                        "You’ve been using your phone for over 30 minutes. Place it face down to take a break."
-                    );
-                    clearInterval(interval);
+        setIsResting(true);
+        setRemainingRestTime(restDuration);
+
+        const timer = setInterval(() => {
+            setRemainingRestTime((prevTime) => {
+                if (prevTime <= 1) {
+                    clearInterval(timer);
+                    completeRest();
+                    return 0;
                 }
-            }, 1000); // Check every second
+                return prevTime - 1;
+            });
+        }, 60000); // Count down every minute
 
-            return () => clearInterval(interval);
-        }
-    }, [isUsingPhone, usageStartTime]);
+        setRestTimer(timer);
+    };
 
-    // Check for resting period
-    useEffect(() => {
-        if (isResting && restStartTime) {
-            const interval = setInterval(() => {
-                const currentTime = new Date();
-                const restDuration = Math.floor((currentTime - restStartTime) / 1000 / 60); // in minutes
-
-                if (restDuration >= 10) {
-                    Alert.alert("Rest Completed!", "Your 10-minute break is logged.");
-                    setRestLogged(true);
-                    setIsResting(false);
-                    clearInterval(interval);
-                }
-            }, 1000); // Check every second
-
-            return () => clearInterval(interval);
-        }
-    }, [isResting, restStartTime]);
+    const completeRest = () => {
+        setIsResting(false);
+        setRemainingRestTime(restDuration); // Reset rest timer to default
+        resetUsageTime(); // Reset usage time after rest completion
+    };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Rest Reminder</Text>
-            <Text>Phone Usage: {isUsingPhone ? "Active" : "Inactive"}</Text>
-            {isUsingPhone && usageStartTime && (
-                <Text>
-                    Using phone since: {usageStartTime.toLocaleTimeString()}
+            {/* Header */}
+            <Text style={styles.header}>Rest Reminder Settings</Text>
+
+            {/* Enable/Disable Feature */}
+            <View style={styles.row}>
+                <Text style={styles.label}>Enable Rest Reminder</Text>
+                <Switch
+                    value={isEnabled}
+                    onValueChange={(value) => setIsEnabled(value)}
+                />
+            </View>
+
+            {/* Set Usage Limit */}
+            <View style={styles.config}>
+                <Text style={styles.label}>
+                    Usage Limit: {usageLimit} minutes
                 </Text>
-            )}
-            <Text>Rest Status: {isResting ? "Resting" : "Not Resting"}</Text>
-            {isResting && restStartTime && (
-                <Text>
-                    Rest started at: {restStartTime.toLocaleTimeString()}
+                <Slider
+                    style={styles.slider}
+                    minimumValue={1}
+                    maximumValue={120}
+                    step={5}
+                    value={usageLimit}
+                    onValueChange={(value) => setUsageLimit(value)}
+                    minimumTrackTintColor="#5DB075"
+                    maximumTrackTintColor="#ccc"
+                    thumbTintColor="#5DB075"
+                />
+            </View>
+
+            {/* Set Rest Duration */}
+            <View style={styles.config}>
+                <Text style={styles.label}>
+                    Rest Duration: {restDuration} minutes
                 </Text>
-            )}
-            <Text>
-                Rest Logged: {restLogged ? "Yes, break logged" : "No, still active"}
-            </Text>
+                <Slider
+                    style={styles.slider}
+                    minimumValue={1}
+                    maximumValue={30}
+                    step={1}
+                    value={restDuration}
+                    onValueChange={(value) => setRestDuration(value)}
+                    minimumTrackTintColor="#5DB075"
+                    maximumTrackTintColor="#ccc"
+                    thumbTintColor="#5DB075"
+                />
+            </View>
+
+            {/* Current Usage */}
+            <View style={styles.statusCard}>
+                <Text style={styles.statusText}>
+                    Current Usage: {usageTime} minutes
+                </Text>
+                <TouchableOpacity
+                    style={styles.resetButton}
+                    onPress={resetUsageTime}
+                >
+                    <Text style={styles.resetButtonText}>Reset Usage</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Rest Status */}
+            <View style={styles.restCard}>
+                <Text style={styles.restHeader}>Rest Status</Text>
+                {!isResting ? (
+                    <View>
+                        <Text style={styles.restInstruction}>
+                            Place your phone face down to start resting.
+                        </Text>
+                        <Text
+                            style={[
+                                styles.restFeedback,
+                                { color: isFlipped ? "green" : "red" },
+                            ]}
+                        >
+                            {isFlipped
+                                ? "Phone is flipped properly!"
+                                : "Phone is not flipped properly."}
+                        </Text>
+                        <TouchableOpacity
+                            style={[
+                                styles.startButton,
+                                { backgroundColor: isFlipped ? "#5DB075" : "#ccc" },
+                            ]}
+                            onPress={startRest}
+                            disabled={!isFlipped}
+                        >
+                            <Text style={styles.startButtonText}>
+                                Start Rest
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View>
+                        <Text style={styles.restInstruction}>
+                            Resting... Please keep your phone face down.
+                        </Text>
+                        <Text style={styles.restTimer}>
+                            Time Remaining: {remainingRestTime}{" "}
+                            {remainingRestTime === 1 ? "minute" : "minutes"}
+                        </Text>
+                    </View>
+                )}
+            </View>
         </View>
     );
 }
@@ -102,12 +185,83 @@ export default function RestReminder() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        padding: 16,
         backgroundColor: "#fff",
     },
     header: {
         fontSize: 24,
         fontWeight: "bold",
-        marginBottom: 20,
+        marginBottom: 16,
+    },
+    row: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+    config: {
+        marginBottom: 16,
+    },
+    slider: {
+        width: "100%",
+        height: 40,
+    },
+    statusCard: {
+        padding: 16,
+        backgroundColor: "#f9f9f9",
+        borderRadius: 8,
+        marginTop: 16,
+        alignItems: "center",
+    },
+    statusText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    resetButton: {
+        backgroundColor: "#5DB075",
+        padding: 10,
+        borderRadius: 8,
+    },
+    resetButtonText: {
+        color: "#fff",
+        fontWeight: "bold",
+    },
+    restCard: {
+        padding: 16,
+        backgroundColor: "#e8f5e9",
+        borderRadius: 8,
+        marginTop: 16,
+    },
+    restHeader: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 8,
+    },
+    restInstruction: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    restFeedback: {
+        fontSize: 16,
+        marginBottom: 16,
+        fontWeight: "bold",
+    },
+    restTimer: {
+        fontSize: 16,
+        marginTop: 8,
+        fontWeight: "bold",
+    },
+    startButton: {
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignItems: "center",
+    },
+    startButtonText: {
+        color: "#fff",
+        fontWeight: "bold",
     },
 });
